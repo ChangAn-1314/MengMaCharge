@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>充电桩监控系统</title>
+    <!-- Bootstrap CSS -->
+    <link href="/static/lib/bootstrap.min.css" rel="stylesheet">
+    <!-- Vue.js -->
+    <script src="/static/lib/vue.global.js"></script>
+    <style>
+        :root {
+            --primary-color: #00a1d6;
+            --primary-light: rgba(0, 161, 214, 0.1);
+            --text-main: #18191c;
+            --text-secondary: #61666d;
+            --bg-white: #fff;
+            --bg-gray: #f1f2f3;
+            --shadow-light: 0 2px 4px rgba(0, 0, 0, 0.02);
+            --shadow-hover: 0 4px 8px rgba(0, 0, 0, 0.04);
+            --radius-normal: 8px;
+            --radius-large: 12px;
+            --glass-bg: rgba(255, 255, 255, 0.7);
+            --glass-border: rgba(255, 255, 255, 0.8);
+            --glass-shadow: rgba(31, 38, 135, 0.05);
+        }
+
+        body {
+            background: linear-gradient(135deg, #e0e6ed 0%, #f5f7fa 100%);
+            color: var(--text-main);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            min-height: 100vh;
+            margin: 0;
+            padding-top: 60px;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--glass-border);
+            padding: 8px 0;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            transition: all 0.3s ease;
+        }
+
+        .header.scrolled {
+            background: rgba(255, 255, 255, 0.95);
+            box-shadow: 0 4px 6px -1px var(--glass-shadow);
+        }
+
+        .header-content {
+            max-width: 800px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 24px;
+        }
+
+        .app-title {
+            color: var(--primary-color);
+            font-size: 1.4rem;
+            font-weight: 600;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-shadow: 0 1px 1px rgba(255, 255, 255, 0.8);
+            white-space: nowrap;
+        }
+
+        .app-title svg {
+            width: 20px;
+            height: 20px;
+            flex-shrink: 0;
+        }
+
+        .refresh-btn {
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            box-shadow: 
+                0 2px 4px var(--glass-shadow),
+                inset 0 0 0 1px rgba(255, 255, 255, 0.6);
+            color: var(--primary-color);
+            padding: 8px 16px;
+            border-radius: var(--radius-normal);
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .refresh-btn:hover {
+            background: rgba(255, 255, 255, 0.9);
+            transform: translateY(-1px);
+            box-shadow: 
+                0 4px 8px var(--glass-shadow),
+                inset 0 0 0 1px rgba(255, 255, 255, 0.8);
+        }
+
+        .refresh-btn:active {
+            transform: translateY(0);
+            box-shadow: 
+                0 2px 4px var(--glass-shadow),
+                inset 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .main-container {
+            max-width: 1280px;
+            margin: 24px auto;
+            padding: 0 24px;
+        }
+
+        .station-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 24px;
+        }
+
+        @media (max-width: 1400px) {
+            .station-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        @media (max-width: 1100px) {
+            .station-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 640px) {
+            .header-content {
+                padding: 0 16px;
+            }
+
+            .main-container {
+                padding: 0 16px;
+                margin: 16px auto;
+            }
+
+            .station-grid {
+                gap: 16px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding-top: 50px;
+            }
+
+            .header {
+                padding: 6px 0;
+            }
+
+            .app-title {
+                font-size: 1.1rem;
+            }
+
+            .app-title svg {
+                width: 16px;
+                height: 16px;
+            }
+
+            .refresh-btn {
+                padding: 4px 12px;
+                font-size: 0.85rem;
+            }
+        }
+
+        .station-card {
+            background: rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-large);
+            box-shadow: 
+                0 4px 6px -1px var(--glass-shadow),
+                0 2px 4px -1px rgba(0, 0, 0, 0.03),
+                inset 0 0 0 1px rgba(255, 255, 255, 0.6);
+            transition: all 0.3s ease;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .station-card:hover {
+            transform: translateY(-2px);
+            background: rgba(255, 255, 255, 0.75);
+            box-shadow: 
+                0 8px 12px -1px var(--glass-shadow),
+                0 4px 6px -1px rgba(0, 0, 0, 0.05),
+                inset 0 0 0 1px rgba(255, 255, 255, 0.8);
+        }
+
+        .station-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at 50% 50%, 
+                rgba(255, 255, 255, 0.8), 
+                rgba(255, 255, 255, 0.2));
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .station-card:hover::before {
+            opacity: 1;
+        }
+
+        .station-title {
+            background: rgba(0, 161, 214, 0.1);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            color: #000;
+            padding: 12px 16px;
+            font-size: 1.1rem;
+            font-weight: 500;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.8);
+            text-shadow: 0 1px 1px rgba(255, 255, 255, 0.8);
+        }
+
+        .port-card {
+            padding: 12px 16px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.8);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .port-card:last-child {
+            border-bottom: none;
+        }
+
+        .port-card:hover {
+            background: rgba(255, 255, 255, 0.5);
+        }
+
+        .port-group {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            flex: 1;
+            justify-content: space-around;
+            flex-wrap: wrap;
+        }
+
+        .port-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 4px 12px;
+            border-radius: var(--radius-normal);
+            background: rgba(255, 255, 255, 0.7);
+            box-shadow: 
+                inset 0 1px 3px rgba(0, 0, 0, 0.05),
+                0 1px 0 rgba(255, 255, 255, 0.8);
+            min-width: 70px;
+        }
+
+        .port-number {
+            color: #000;
+            font-size: 0.95rem;
+            font-weight: 500;
+            text-shadow: 0 1px 0 rgba(255, 255, 255, 0.8);
+            white-space: nowrap;
+        }
+
+        .status-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            position: relative;
+            box-shadow: 
+                0 1px 2px rgba(0, 0, 0, 0.1),
+                inset 0 1px 1px rgba(255, 255, 255, 0.8);
+        }
+
+        .status-indicator::after {
+            content: '';
+            position: absolute;
+            top: -4px;
+            left: -4px;
+            right: -4px;
+            bottom: -4px;
+            border-radius: 50%;
+            animation: pulse var(--pulse-duration, 3s) infinite;
+            animation-delay: var(--pulse-delay, 0s);
+            box-shadow: 0 0 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .status-indicator.idle {
+            background: linear-gradient(135deg, #10B981, #34D399);
+            box-shadow: 0 0 10px rgba(16, 185, 129, 0.4);
+        }
+
+        .status-indicator.idle::after {
+            background: radial-gradient(circle, rgba(16, 185, 129, 0.4) 0%, rgba(16, 185, 129, 0) 70%);
+        }
+
+        .status-indicator.busy {
+            background: linear-gradient(135deg, #EF4444, #F87171);
+            box-shadow: 0 0 10px rgba(239, 68, 68, 0.4);
+        }
+
+        .status-indicator.busy::after {
+            background: radial-gradient(circle, rgba(239, 68, 68, 0.4) 0%, rgba(239, 68, 68, 0) 70%);
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+                opacity: 0.8;
+            }
+            50% {
+                transform: scale(2.5);
+                opacity: 0.2;
+            }
+            100% {
+                transform: scale(1);
+                opacity: 0;
+            }
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding-top: 50px;
+            }
+
+            .header {
+                padding: 6px 0;
+            }
+
+            .app-title {
+                font-size: 1.1rem;
+            }
+
+            .app-title svg {
+                width: 16px;
+                height: 16px;
+            }
+
+            .refresh-btn {
+                padding: 4px 12px;
+                font-size: 0.85rem;
+            }
+
+            .port-card {
+                padding: 8px 12px;
+            }
+
+            .port-group {
+                gap: 12px;
+            }
+
+            .port-status {
+                padding: 3px 10px;
+                min-width: 60px;
+            }
+
+            .port-number {
+                font-size: 0.9rem;
+            }
+        }
+
+        @media (max-width: 360px) {
+            .port-status {
+                padding: 2px 8px;
+                min-width: 55px;
+            }
+
+            .port-number {
+                font-size: 0.85rem;
+            }
+
+            .port-group {
+                gap: 8px;
+            }
+        }
+
+        .alert {
+            background: rgba(254, 242, 242, 0.9);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(254, 226, 226, 0.8);
+            color: #EF4444;
+            padding: 12px 16px;
+            border-radius: var(--radius-normal);
+            margin-bottom: 20px;
+            box-shadow: 
+                0 2px 4px rgba(0, 0, 0, 0.05),
+                inset 0 0 0 1px rgba(255, 255, 255, 0.6);
+        }
+
+        [v-cloak] {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="app" v-cloak>
+        <header class="header" :class="{ scrolled: isScrolled }">
+            <div class="header-content">
+                <h1 class="app-title">
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 4V2M12 20v2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41M4 12H2m20 0h-2M6.34 6.34L4.93 4.93m14.14 14.14l-1.41-1.41M14 12a2 2 0 11-4 0 2 2 0 014 0z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    充电桩监控系统
+                </h1>
+                <button class="refresh-btn" @click="refreshData">
+                    刷新数据
+                </button>
+            </div>
+        </header>
+
+        <main class="main-container">
+            <div v-if="error" class="alert" role="alert">
+                [[ error ]]
+            </div>
+            <div v-else class="station-grid">
+                <div v-for="station in stations" :key="station.station_id" class="station-card">
+                    <div class="station-title">[[ station.name ]]</div>
+                    <div v-for="i in Math.ceil(station.ports.length / 2)" class="port-card">
+                        <div class="port-group">
+                            <div class="port-status" v-if="station.ports[(i-1)*2]">
+                                <div class="port-number">[[ station.ports[(i-1)*2].port ]]号</div>
+                                <div :class="['status-indicator', getStatusClass(station.ports[(i-1)*2].status)]" :style="getRandomPulseStyle()"></div>
+                            </div>
+                            <div class="port-status" v-if="station.ports[(i-1)*2+1]">
+                                <div class="port-number">[[ station.ports[(i-1)*2+1].port ]]号</div>
+                                <div :class="['status-indicator', getStatusClass(station.ports[(i-1)*2+1].status)]" :style="getRandomPulseStyle()"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Bootstrap Bundle with Popper -->
+    <script src="/static/lib/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        const { createApp } = Vue;
+        
+        createApp({
+            delimiters: ['[[', ']]'],
+            data() {
+                return {
+                    stations: [],
+                    error: null,
+                    refreshInterval: null,
+                    isScrolled: false
+                }
+            },
+            methods: {
+                async refreshData() {
+                    try {
+                        const response = await fetch('/api/stations');
+                        const data = await response.json();
+                        if (data.error) {
+                            this.error = data.error;
+                        } else {
+                            this.stations = data.stations;
+                            this.error = null;
+                        }
+                    } catch (err) {
+                        this.error = '获取数据失败：' + err.message;
+                    }
+                },
+                getStatusClass(status) {
+                    return {
+                        'idle': status === '空闲',
+                        'busy': status === '占用'
+                    }
+                },
+                getRandomPulseStyle() {
+                    return {
+                        '--pulse-duration': `${2 + Math.random() * 2}s`,
+                        '--pulse-delay': `${Math.random() * 2}s`
+                    }
+                },
+                startAutoRefresh() {
+                    this.refreshInterval = setInterval(this.refreshData, 5000);
+                },
+                stopAutoRefresh() {
+                    if (this.refreshInterval) {
+                        clearInterval(this.refreshInterval);
+                    }
+                },
+                handleScroll() {
+                    this.isScrolled = window.scrollY > 20;
+                }
+            },
+            mounted() {
+                this.refreshData();
+                this.startAutoRefresh();
+                window.addEventListener('scroll', this.handleScroll);
+            },
+            beforeUnmount() {
+                this.stopAutoRefresh();
+                window.removeEventListener('scroll', this.handleScroll);
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>
