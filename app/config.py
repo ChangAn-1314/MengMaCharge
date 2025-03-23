@@ -27,42 +27,70 @@ class Config:
     )
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     
+    # 数据库连接池配置
+    SQLALCHEMY_POOL_SIZE = int(os.environ.get('DB_POOL_SIZE', 10))
+    SQLALCHEMY_POOL_TIMEOUT = int(os.environ.get('DB_POOL_TIMEOUT', 30))
+    SQLALCHEMY_POOL_RECYCLE = int(os.environ.get('DB_POOL_RECYCLE', 3600))
+    SQLALCHEMY_MAX_OVERFLOW = int(os.environ.get('DB_MAX_OVERFLOW', 20))
+    
     # API配置
     API_SECRET_KEY = os.environ.get('API_SECRET_KEY')
     API_APPID = os.environ.get('API_APPID', 'mengma')
     API_APPCOMMID = os.environ.get('API_APPCOMMID', 'MCB_INSTANCE_WECHAT_APP')
     API_TOKEN = os.environ.get('API_TOKEN')
+    API_TIMEOUT = int(os.environ.get('API_TIMEOUT', 5))  # API请求超时时间（秒）
     
     # 缓存配置
-    CACHE_TIMEOUT = int(os.environ.get('CACHE_TIMEOUT', 5))
+    CACHE_TIMEOUT = int(os.environ.get('CACHE_TIMEOUT', 30))  # 缓存过期时间（秒）
+    CACHE_TYPE = os.environ.get('CACHE_TYPE', 'RedisCache')  # 缓存类型
+    
+    # Redis配置
+    REDIS_HOST = os.environ.get('REDIS_HOST', 'localhost')
+    REDIS_PORT = int(os.environ.get('REDIS_PORT', 6379))
+    REDIS_PASSWORD = os.environ.get('REDIS_PASSWORD', '')
+    REDIS_DB = int(os.environ.get('REDIS_DB', 0))
+    
+    # Celery配置
+    ENABLE_ASYNC = os.environ.get('ENABLE_ASYNC', 'false').lower() == 'true'
+    CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL', f'redis://{REDIS_HOST}:{REDIS_PORT}/1')
+    CELERY_RESULT_BACKEND = os.environ.get('CELERY_RESULT_BACKEND', f'redis://{REDIS_HOST}:{REDIS_PORT}/1')
+    CELERY_WORKER_CONCURRENCY = int(os.environ.get('CELERY_WORKER_CONCURRENCY', 4))
+    CELERY_TASK_TIMEOUT = int(os.environ.get('CELERY_TASK_TIMEOUT', 300))
+    
+    # 日志配置
+    LOG_LEVEL = os.environ.get('LOG_LEVEL', 'INFO')
+    LOG_FILE = os.environ.get('LOG_FILE', None)
+    
+    # 性能优化配置
+    BATCH_UPDATE_SIZE = int(os.environ.get('BATCH_UPDATE_SIZE', 10))  # 批量更新大小
+    CONNECTION_POOL_SIZE = int(os.environ.get('CONNECTION_POOL_SIZE', 20))  # HTTP连接池大小
+    BULK_DB_OPERATION = os.environ.get('BULK_DB_OPERATION', 'true').lower() == 'true'  # 是否启用批量数据库操作
 
 class DevelopmentConfig(Config):
     """开发环境配置"""
     DEBUG = True
+    LOG_LEVEL = 'DEBUG'
+    SQLALCHEMY_ECHO = True
     
 class TestingConfig(Config):
     """测试环境配置"""
     TESTING = True
-    # 使用内存SQLite数据库进行测试
+    CACHE_TYPE = 'SimpleCache'
     SQLALCHEMY_DATABASE_URI = 'sqlite:///:memory:'
+    ENABLE_ASYNC = False
     
 class ProductionConfig(Config):
     """生产环境配置"""
     DEBUG = False
-    
-    # 在生产环境中使用更安全的配置
-    @classmethod
-    def init_app(cls, app):
-        """生产环境特定初始化"""
-        # 在这里可以添加生产环境特定的配置
-        pass
+    TESTING = False
+    # 实际生产环境应该有更严格的配置
+    LOG_LEVEL = 'WARNING'
+    SQLALCHEMY_ECHO = False
 
-# 配置字典，用于选择不同环境的配置
+# 配置映射
 config = {
     'development': DevelopmentConfig,
     'testing': TestingConfig,
     'production': ProductionConfig,
-    
-    # 默认配置
     'default': DevelopmentConfig
 } 

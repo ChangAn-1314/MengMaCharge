@@ -1,136 +1,159 @@
 # 充电桩监控系统
 
-一个基于Flask和Vue.js的充电桩端口状态监控系统。
+## 项目介绍
+充电桩监控系统是一个用于实时监控和管理充电站点的Web应用，能够显示充电端口的状态、电压、电流等信息，支持异步更新和缓存机制。
 
-## 功能特点
+## 主要特性
+- 实时监控充电桩端口状态
+- 支持多个充电站点管理
+- 异步任务处理提高系统响应速度
+- 缓存机制减少API请求和数据库访问
+- 自动刷新和手动刷新功能
+- RESTful API接口
+- 响应式Web界面
 
-- 实时监控多个充电桩的端口状态
-- 自动刷新（每5秒更新一次）
-- 支持手动刷新数据
-- 清晰的状态显示（空闲/占用）
-- 响应式布局，支持移动设备
+## 性能优化
+系统在以下几个方面进行了性能优化：
+
+### 1. 缓存优化
+- 使用Redis缓存充电桩状态，减少重复API请求
+- 缓存自动过期机制，确保数据时效性
+- 智能缓存刷新策略，避免不必要的更新
+
+### 2. 异步处理
+- Celery任务队列处理状态更新
+- 任务重试机制确保数据可靠性
+- 并发工作进程处理多个充电桩请求
+
+### 3. 数据库优化
+- 批量数据库操作减少数据库连接开销
+- 数据库连接池管理连接资源
+- 索引优化提高查询速度
+
+### 4. 网络请求优化
+- HTTP连接池重用连接
+- 请求重试机制处理网络波动
+- 超时控制避免长时间阻塞
 
 ## 技术栈
-
-- 后端：Flask + SQLAlchemy
-- 前端：Vue.js 3 + Bootstrap 5
+- 后端：Python + Flask + SQLAlchemy + Celery
 - 数据库：MySQL
+- 缓存：Redis
+- 前端：HTML + CSS + JavaScript + Vue.js
+- 部署：Docker（可选）
 
-## 项目结构
-
+## 系统架构
 ```
-MengMa/
-├── app/                    # 应用主目录
-│   ├── __init__.py        # 应用初始化
-│   ├── config.py          # 配置管理
-│   ├── init_db.py         # 数据库初始化
-│   ├── blueprints/        # 蓝图模块
-│   │   ├── __init__.py    # 蓝图初始化
-│   │   ├── api.py         # API蓝图
-│   │   └── main.py        # 主页蓝图
-│   ├── services/          # 服务层
-│   │   ├── __init__.py    # 服务层初始化
-│   │   └── station_service.py  # 充电桩服务
-│   ├── repositories/      # 数据访问层
-│   │   ├── __init__.py    # 数据访问层初始化
-│   │   └── station_repository.py  # 充电桩数据访问
-│   ├── models/            # 数据模型
-│   ├── static/            # 静态文件
-│   └── templates/         # HTML模板
-├── initialize_system.py   # 系统初始化脚本
-├── port_status.py         # 外部API模块
-├── .env.example           # 环境变量模板
-├── requirements.txt       # 项目依赖
-└── run.py                 # 应用入口
++---------------+     +-------------+     +-----------+
+| Web界面/API   | --> | Flask应用    | --> | 数据库    |
++---------------+     +-------------+     +-----------+
+                      |  |
+                      |  v
+                   +--+-------+     +------------+
+                   | Celery  | --> | 外部API     |
+                   +----------+     +------------+
+                      |
+                      v
+                   +----------+
+                   | Redis    |
+                   +----------+
 ```
 
-## 安装说明
+## 安装部署
 
-1. 创建虚拟环境：
+### 环境要求
+- Python 3.8+
+- MySQL 5.7+
+- Redis 6.0+
+
+### 基础安装
+1. 克隆代码库
+```bash
+git clone https://github.com/yourusername/charging-station-monitor.git
+cd charging-station-monitor
+```
+
+2. 创建并激活虚拟环境
 ```bash
 python -m venv venv
 source venv/bin/activate  # Linux/Mac
 venv\Scripts\activate     # Windows
 ```
 
-2. 安装依赖：
+3. 安装依赖
 ```bash
 pip install -r requirements.txt
 ```
 
-3. 初始化系统：
+4. 配置环境变量
 ```bash
-python initialize_system.py
+cp .env.example .env
+# 编辑.env文件，设置数据库和API密钥等配置
 ```
-初始化脚本会引导您设置数据库配置，并创建必要的数据库表和初始数据。
 
-4. 运行应用：
+5. 初始化数据库
 ```bash
-python run.py
+flask init-db
 ```
 
-## 配置说明
-
-系统使用`.env`文件管理配置。您可以复制`.env.example`文件并重命名为`.env`，然后根据您的环境修改配置参数。
-
-主要配置项包括：
-
-```env
-# 应用配置
-FLASK_APP=run.py
-FLASK_ENV=development  # development, testing, production
-SECRET_KEY=your_secret_key_here
-
-# 数据库配置
-DB_USER=username
-DB_PASSWORD=password
-DB_HOST=localhost
-DB_NAME=port_status_db
-
-# API认证配置 (充电桩API接口)
-API_SECRET_KEY=your_api_secret_key
-API_APPID=mengma
-API_APPCOMMID=MCB_INSTANCE_WECHAT_APP
-API_TOKEN=your_api_token
-
-# 缓存配置
-CACHE_TIMEOUT=5  # 缓存过期时间（秒）
+6. 运行应用
+```bash
+flask run
 ```
 
-## 系统架构
+### 使用Docker部署（可选）
+```bash
+docker-compose up -d
+```
 
-系统采用分层架构设计，包括：
+## 使用说明
 
-1. **表示层**：蓝图和路由，处理HTTP请求和响应
-2. **服务层**：业务逻辑实现，如充电桩状态更新
-3. **数据访问层**：封装数据库操作，提供数据访问接口
-4. **模型层**：定义数据模型和关系
+### Web界面
+访问`http://localhost:5000`查看充电桩监控界面，可以：
+- 查看充电桩列表和状态
+- 查看端口详细信息
+- 手动刷新状态
 
-这种分层架构使系统具有良好的可维护性和可扩展性。
+### API接口
+- `GET /api/stations` - 获取所有充电桩列表
+- `GET /api/stations/<station_id>` - 获取特定充电桩信息
+- `GET /api/ports` - 获取默认充电桩的端口状态
 
-## API接口
+## 开发指南
 
-### 获取所有充电桩状态
-- URL: `/api/stations`
-- 方法: GET
-- 返回: 所有充电桩及其端口状态
+### 项目结构
+```
+charging-station-monitor/
+├── app/                    # 应用主目录
+│   ├── __init__.py         # 应用初始化
+│   ├── config.py           # 配置文件
+│   ├── models/             # 数据模型
+│   ├── services/           # 业务逻辑
+│   ├── repositories/       # 数据访问
+│   ├── blueprints/         # 蓝图模块
+│   ├── cache.py            # 缓存处理
+│   ├── tasks.py            # 异步任务
+│   ├── static/             # 静态资源
+│   └── templates/          # 模板文件
+├── port_status.py          # 外部API访问
+├── celery_worker.py        # Celery工作进程
+├── initialize_system.py    # 系统初始化脚本
+├── requirements.txt        # 依赖清单
+├── .env.example            # 环境变量模板
+└── README.md               # 项目说明
+```
 
-### 获取单个充电桩状态
-- URL: `/api/ports`
-- 方法: GET
-- 返回: 默认充电桩的端口状态
+### 添加新功能
+1. 实现数据模型（`app/models/`）
+2. 添加数据访问层（`app/repositories/`）
+3. 实现业务逻辑（`app/services/`）
+4. 创建API路由（`app/blueprints/`）
 
-## 开发说明
-
-- 代码规范遵循PEP 8
-- 使用类型注解
-- 所有函数都有文档字符串
-- 使用统一的错误处理机制
-
-## 维护者
-
-- [An]
+## 故障排除
+- 确保MySQL和Redis服务正常运行
+- 检查日志文件中的错误信息
+- 确保环境变量正确设置
+- 使用`flask test-connection`测试数据库连接
 
 ## 许可证
-
-MIT
+本项目采用MIT许可证。
