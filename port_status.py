@@ -8,12 +8,20 @@ import hashlib
 import hmac
 import json
 import time
+import os
 import requests
 import urllib3
 from datetime import datetime
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 from typing import Dict, Any, Optional
+from dotenv import load_dotenv
+
+# 加载环境变量（确保在导入Config前加载）
+load_dotenv(dotenv_path=os.path.join(os.path.dirname(os.path.abspath(__file__)), '.env'))
+
+# 导入配置
+from app.config import Config
 
 # 禁用不安全请求警告
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -72,11 +80,11 @@ def get_signature(secret_key, params, method, timestamp):
     ).hexdigest()
     return signature
 
-# ------------------- 配置参数 -------------------
-secret_key = "tquO0s2pGW8cXzR7Qu5QgO7Gtv8u7JAH"  # 确保密钥
-appid = "mengma"
-appcommid = "MCB_INSTANCE_WECHAT_APP"
-token = "AppletUser:d57aed571109778f5056496c6580792b"
+# 从配置获取API参数
+secret_key = Config.API_SECRET_KEY or "tquO0s2pGW8cXzR7Qu5QgO7Gtv8u7JAH"
+appid = Config.API_APPID
+appcommid = Config.API_APPCOMMID
+token = Config.API_TOKEN or "AppletUser:d57aed571109778f5056496c6580792b"
 
 def get_port_status(eq_num: Optional[str] = None) -> Dict[str, Any]:
     """获取充电桩端口状态

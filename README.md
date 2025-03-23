@@ -22,15 +22,26 @@
 MengMa/
 ├── app/                    # 应用主目录
 │   ├── __init__.py        # 应用初始化
-│   ├── routes.py          # 路由定义
-│   ├── controllers/       # 控制器
-│   ├── models/           # 数据模型
-│   ├── static/           # 静态文件
-│   └── templates/        # HTML模板
-├── instance/             # 实例配置
-├── port_status.py        # 端口状态处理
-├── requirements.txt      # 项目依赖
-└── run.py               # 应用入口
+│   ├── config.py          # 配置管理
+│   ├── init_db.py         # 数据库初始化
+│   ├── blueprints/        # 蓝图模块
+│   │   ├── __init__.py    # 蓝图初始化
+│   │   ├── api.py         # API蓝图
+│   │   └── main.py        # 主页蓝图
+│   ├── services/          # 服务层
+│   │   ├── __init__.py    # 服务层初始化
+│   │   └── station_service.py  # 充电桩服务
+│   ├── repositories/      # 数据访问层
+│   │   ├── __init__.py    # 数据访问层初始化
+│   │   └── station_repository.py  # 充电桩数据访问
+│   ├── models/            # 数据模型
+│   ├── static/            # 静态文件
+│   └── templates/         # HTML模板
+├── initialize_system.py   # 系统初始化脚本
+├── port_status.py         # 外部API模块
+├── .env.example           # 环境变量模板
+├── requirements.txt       # 项目依赖
+└── run.py                 # 应用入口
 ```
 
 ## 安装说明
@@ -47,9 +58,11 @@ venv\Scripts\activate     # Windows
 pip install -r requirements.txt
 ```
 
-3. 配置数据库：
-   - 创建MySQL数据库
-   - 配置数据库连接信息（在.env文件中）
+3. 初始化系统：
+```bash
+python initialize_system.py
+```
+初始化脚本会引导您设置数据库配置，并创建必要的数据库表和初始数据。
 
 4. 运行应用：
 ```bash
@@ -58,13 +71,42 @@ python run.py
 
 ## 配置说明
 
-在项目根目录创建`.env`文件，包含以下配置：
+系统使用`.env`文件管理配置。您可以复制`.env.example`文件并重命名为`.env`，然后根据您的环境修改配置参数。
+
+主要配置项包括：
 
 ```env
+# 应用配置
 FLASK_APP=run.py
-FLASK_ENV=development
-DATABASE_URL=mysql+pymysql://username:password@localhost/dbname
+FLASK_ENV=development  # development, testing, production
+SECRET_KEY=your_secret_key_here
+
+# 数据库配置
+DB_USER=username
+DB_PASSWORD=password
+DB_HOST=localhost
+DB_NAME=port_status_db
+
+# API认证配置 (充电桩API接口)
+API_SECRET_KEY=your_api_secret_key
+API_APPID=mengma
+API_APPCOMMID=MCB_INSTANCE_WECHAT_APP
+API_TOKEN=your_api_token
+
+# 缓存配置
+CACHE_TIMEOUT=5  # 缓存过期时间（秒）
 ```
+
+## 系统架构
+
+系统采用分层架构设计，包括：
+
+1. **表示层**：蓝图和路由，处理HTTP请求和响应
+2. **服务层**：业务逻辑实现，如充电桩状态更新
+3. **数据访问层**：封装数据库操作，提供数据访问接口
+4. **模型层**：定义数据模型和关系
+
+这种分层架构使系统具有良好的可维护性和可扩展性。
 
 ## API接口
 
